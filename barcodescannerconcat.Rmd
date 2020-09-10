@@ -1,0 +1,93 @@
+---
+title: "Barcode Scanner Concatenation"
+author: "Laila Sathe"
+date: "9/8/2020"
+output: html_document
+runtime: shiny
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+This file will guide you through the concatenation of multiple barcode scanner files into a single file that is compatible with Benchling.
+
+To learn more, reference the related SOP, which can be found [HERE](https://uclahs.app.box.com/folder/121755341296).
+
+## Input desired files
+Type run name in the text input field. Then, use `ctrl` + `click` to select all desired files.
+
+Next, click to select the desire folder to save to. Click `Submit`.
+
+A preview will show your concatenated file. Your concatenated file will be saved with the run name in the desired folder.
+
+```{r, echo=FALSE}
+library(shiny)
+library(plyr)
+library(shinyFiles)
+
+
+  ui <- fluidPage(
+      
+      sidebarLayout(
+          sidebarPanel(
+              textInput("text", "Run Name"),
+              fileInput("file1", "Choose CSV Files", accept = ".csv", multiple=TRUE),
+              shinyDirButton('folder', 'Save to', 'Please select a folder', FALSE),
+              actionButton("go", "Submit"),
+          ),
+          
+          mainPanel(
+             
+              tableOutput("contents"),
+              #textOutput("name")
+          )
+      )
+  )
+  
+  server <- function(input, output) {
+    observed=reactiveValues(
+            input=NULL
+    )
+    observe({
+      volumes=getVolumes()
+      roots=c(wd = 'C:')
+      shinyDirChoose(input, 'folder', roots = roots, filetypes=c('', 'txt'))
+      observed$input=c(isolate(observed$input),(parseDirPath(roots, input$folder)))
+     
+    })
+ 
+    observeEvent(input$go, {
+    output$contents <- renderTable({
+          
+          
+          #set run name based on text input
+          run_name<-input$text
+         
+          #do the concatenation based on files uploaded and return
+          files<-input$file1
+          myfiles<-lapply(files$datapath, read.csv, header=FALSE)
+          df <- ldply(myfiles, data.frame)
+          df2<-df[!(df$V3=="No Tube"),]
+          print(observed$input)
+          
+          #save name
+          save_name<-paste(observed$input, "/", run_name, ".csv", sep = "")
+          print("SN")
+          print(save_name)
+          
+          write.table(df2, save_name, sep=",", col.names=FALSE,  row.names=FALSE)
+          colnames(df2)<-c("Rack", "Position", "Barcode")
+          df2
+          
+      })
+    })
+  }
+  
+  shinyApp(ui, server)
+
+
+```
+
+
+
