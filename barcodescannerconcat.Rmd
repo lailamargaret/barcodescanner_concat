@@ -2,7 +2,7 @@
 title: "Barcode Scanner Concatenation"
 author: "Laila Sathe"
 date: "9/8/2020"
-output: html_document
+rmarkdown::github_document
 runtime: shiny
 ---
 
